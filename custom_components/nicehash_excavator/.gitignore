@@ -1,0 +1,9 @@
+/*
+/*/
+!/custom_components/
+/custom_components/*
+!/custom_components/nicehash_excavator
+__pycache__/
+!.gitignore
+!LICENSE
+!README.md
