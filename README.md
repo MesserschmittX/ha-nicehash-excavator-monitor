@@ -1,4 +1,4 @@
-# Nicehash Eexcavator Monitor
+# Nicehash Excavator Monitor
 Home Assistant integration for Nicehash Excavator miner API
 
 (Excavator API Doku: https://github.com/nicehash/excavator/tree/master/api)
