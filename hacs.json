@@ -1,5 +1,6 @@
 {
     "name": "Nicehash Excavator API",
+    "domains": ["sensor"],
     "render_readme": true,
     "homeassistant": "2021.12.1"
   }
