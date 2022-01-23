@@ -8,7 +8,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Callable, HomeAssistant
 
 from .const import (
-    CONFIG_HOST_ADRESS,
+    CONFIG_HOST_ADDRESS,
     CONFIG_HOST_PORT,
     CONFIG_NAME,
     CONFIG_UPDATE_INTERVAL,
@@ -25,7 +25,7 @@ class MiningRig:
         self._name = config_entry.data[CONFIG_NAME]
         self._id = config_entry.data[CONFIG_NAME].lower()
         self._api = ExcavatorAPI(
-            config_entry.data[CONFIG_HOST_ADRESS], config_entry.data[CONFIG_HOST_PORT]
+            config_entry.data[CONFIG_HOST_ADDRESS], config_entry.data[CONFIG_HOST_PORT]
         )
         self.algorithms = {}
         self.cards = {}

@@ -13,7 +13,7 @@
             "user": {
                 "data": {
                     "name": "Miner name",
-                    "host_adress": "Host address",
+                    "host_address": "Host address",
                     "host_port": "Excavator port",
                     "update_interval": "Data update interval in seconds"
                 }

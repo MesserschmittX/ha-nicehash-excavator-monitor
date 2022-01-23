@@ -19,7 +19,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
-    CONFIG_HOST_ADRESS,
+    CONFIG_HOST_ADDRESS,
     CONFIG_HOST_PORT,
     CONFIG_NAME,
     CONFIG_UPDATE_INTERVAL,
@@ -39,7 +39,7 @@ _LOGGER = logging.getLogger(__name__)
 
 MAIN_DATA_SCHEMA = {
     vol.Required(CONFIG_NAME): str,
-    vol.Required(CONFIG_HOST_ADRESS): str,
+    vol.Required(CONFIG_HOST_ADDRESS): str,
     vol.Required(CONFIG_HOST_PORT, default=DEFAULT_HOST_PORT): int,
     vol.Required(CONFIG_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL): All(
         int, Range(min=MIN_UPDATE_INTERVAL, max=MAX_UPDATE_INTERVAL)
@@ -53,7 +53,7 @@ async def validate_input(hass: HomeAssistant, data: dict) -> dict[str, Any]:
     if data[CONFIG_HOST_PORT] < 1 or data[CONFIG_HOST_PORT] > 65535:
         raise InvalidPort
 
-    excavator = ExcavatorAPI(data[CONFIG_HOST_ADRESS], data[CONFIG_HOST_PORT])
+    excavator = ExcavatorAPI(data[CONFIG_HOST_ADDRESS], data[CONFIG_HOST_PORT])
 
     result = await excavator.test_connection()
     if not result:
@@ -62,7 +62,7 @@ async def validate_input(hass: HomeAssistant, data: dict) -> dict[str, Any]:
     return {
         "title": data[CONFIG_NAME],
         CONFIG_NAME: data[CONFIG_NAME],
-        CONFIG_HOST_ADRESS: data[CONFIG_HOST_ADRESS],
+        CONFIG_HOST_ADDRESS: [CONFIG_HOST_ADDRESS],
         CONFIG_HOST_PORT: data[CONFIG_HOST_PORT],
         CONFIG_UPDATE_INTERVAL: data[CONFIG_UPDATE_INTERVAL],
     }
@@ -93,7 +93,7 @@ class MainConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors[CONFIG_HOST_PORT] = ERROR_INVALID_PORT
             except ClientConnectorError as err:
                 _LOGGER.error(err)
-                errors[CONFIG_HOST_ADRESS] = ERROR_CANNOT_CONNECT
+                errors[CONFIG_HOST_ADDRESS] = ERROR_CANNOT_CONNECT
                 errors[CONFIG_HOST_PORT] = ERROR_CANNOT_CONNECT
             except Exception as err:
                 _LOGGER.error(err)

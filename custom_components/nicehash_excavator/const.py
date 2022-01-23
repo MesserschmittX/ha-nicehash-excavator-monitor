@@ -10,7 +10,7 @@ MAX_UPDATE_INTERVAL = 600
 MIN_UPDATE_INTERVAL = 1
 
 CONFIG_NAME = "name"
-CONFIG_HOST_ADRESS = "host_adress"
+CONFIG_HOST_ADDRESS = "host_address"
 CONFIG_HOST_PORT = "host_port"
 CONFIG_UPDATE_INTERVAL = "update_interval"
 

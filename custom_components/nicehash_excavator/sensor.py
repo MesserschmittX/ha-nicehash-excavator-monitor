@@ -20,7 +20,7 @@ async def async_setup_entry(
 
     for card_id in mining_rig.cards.keys():
         new_devices.append(GpuTempSensor(config_entry, mining_rig, card_id))
-        new_devices.append(VramTempSensor(config_entry, mining_rig, card_id))
+        new_devices.append(VRAMTempSensor(config_entry, mining_rig, card_id))
         new_devices.append(HotspotTempSensor(config_entry, mining_rig, card_id))
         new_devices.append(OvertemperatureSensor(config_entry, mining_rig, card_id))
     for algorithm_id in mining_rig.algorithms.keys():
@@ -158,8 +158,8 @@ class GpuTempSensor(CardSensorBase):
         return self._mining_rig.cards.get(self._card_id).get("gpu_temp")
 
 
-class VramTempSensor(CardSensorBase):
-    """Vram temp Sensor."""
+class VRAMTempSensor(CardSensorBase):
+    """VRAM temp Sensor."""
 
     device_class = SensorDeviceClass.TEMPERATURE
     _attr_unit_of_measurement = TEMP_CELSIUS
@@ -215,29 +215,6 @@ class OvertemperatureSensor(CardSensorBase):
         return self._mining_rig.cards.get(self._card_id).get("too_hot")
 
 
-class AlgorithmHashrateSensor(RigSensor):
-    """Hashrate Sensor per Algorithm."""
-
-    _attr_unit_of_measurement = "Mh/s"
-
-    def __init__(
-        self, config_entry: ConfigEntry, mining_rig: MiningRig, algorithm_id: any
-    ) -> None:
-        """Initialize the sensor."""
-        super().__init__(mining_rig, config_entry)
-        self._algorithm_id = algorithm_id
-        self._attr_unique_id = f'{self._rig_name}_{self._mining_rig.algorithms.get(self._algorithm_id).get("name")}_hashrate'
-        self._attr_name = f'{self._rig_name} {self._mining_rig.algorithms.get(self._algorithm_id).get("name")}'
-
-    @property
-    def state(self) -> float:
-        """Return the state of the sensor."""
-        return round(
-            self._mining_rig.algorithms.get(self._algorithm_id).get("speed") / 1000000,
-            2,
-        )
-
-
 class WorkerAlgorithmHashrateSensor(CardSensorBase):
     """Hashrate Sensor per GPU and Algorithm ."""
 
@@ -276,3 +253,41 @@ class WorkerAlgorithmHashrateSensor(CardSensorBase):
             / 1000000,
             2,
         )
+
+
+class AlgorithmHashrateSensor(RigSensor):
+    """Hashrate Sensor per Algorithm."""
+
+    _attr_unit_of_measurement = "Mh/s"
+
+    def __init__(
+        self, config_entry: ConfigEntry, mining_rig: MiningRig, algorithm_id: any
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(mining_rig, config_entry)
+        self._algorithm_id = algorithm_id
+        self._attr_unique_id = f'{self._rig_name}_{self._mining_rig.algorithms.get(self._algorithm_id).get("name")}_hashrate'
+        self._attr_name = f'{self._rig_name} {self._mining_rig.algorithms.get(self._algorithm_id).get("name")}'
+
+    @property
+    def state(self) -> float:
+        """Return the state of the sensor."""
+        return round(
+            self._mining_rig.algorithms.get(self._algorithm_id).get("speed") / 1000000,
+            2,
+        )
+
+
+class OnlineSensor(RigSensor):
+    """Online Sensor"""
+
+    def __init__(self, config_entry: ConfigEntry, mining_rig: MiningRig) -> None:
+        """Initialize the sensor."""
+        super().__init__(mining_rig, config_entry)
+        self._attr_unique_id = f"{self._rig_name}_status"
+        self._attr_name = f"{self._rig_name} status"
+
+    @property
+    def state(self) -> float:
+        """Return the state of the sensor."""
+        return "Online" if self._mining_rig.online else "Offline"

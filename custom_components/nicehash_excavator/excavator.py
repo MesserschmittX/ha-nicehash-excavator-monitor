@@ -12,18 +12,18 @@ _LOGGER = logging.getLogger(__name__)
 class ExcavatorAPI:
     """Excavator API Implementation."""
 
-    def __init__(self, host_adress: str, host_port: int) -> None:
+    def __init__(self, host_address: str, host_port: int) -> None:
         """Init ExcavatorAPI."""
-        self._host_adress = self.format_host_adress(host_adress)
+        self.host_address = self.format_host_address(host_address)
         self._host_port = host_port
-        self._enable_loggigng = False
+        self._enable_logging = False
 
-    async def request(self, querry: str) -> ClientResponse | None:
+    async def request(self, query: str) -> ClientResponse | None:
         """Excavator API Request"""
 
-        url = f"{self._host_adress}:{self._host_port}/api?command={querry}"
+        url = f"{self.host_address}:{self._host_port}/api?command={query}"
 
-        if self._enable_loggigng:
+        if self._enable_logging:
             _LOGGER.info("GET %s", url)
 
         async with aiohttp.ClientSession() as session:
@@ -45,24 +45,24 @@ class ExcavatorAPI:
 
     async def test_connection(self) -> bool:
         """Test connectivity"""
-        querry = '{"id":1,"method":"info","params":[]}'
-        response = await self.request(querry)
+        query = '{"id":1,"method":"info","params":[]}'
+        response = await self.request(query)
         if response is not None:
             return True
         return False
 
     async def get_rig_info(self) -> ClientResponse | None:
         """Get Rig Information"""
-        querry = '{"id":1,"method":"info","params":[]}'
-        response = await self.request(querry)
+        query = '{"id":1,"method":"info","params":[]}'
+        response = await self.request(query)
         if response is not None:
             return response
         return None
 
     async def get_devices(self) -> ClientResponse | None:
         """Get the devices"""
-        querry = '{"id":1,"method":"devices.get","params":[]}'
-        response = await self.request(querry)
+        query = '{"id":1,"method":"devices.get","params":[]}'
+        response = await self.request(query)
         if response is not None:
             devices = {}
             for device in response.get("devices"):
@@ -71,8 +71,8 @@ class ExcavatorAPI:
 
     async def get_algorithms(self) -> ClientResponse | None:
         """Get the Algorithms"""
-        querry = '{"id":1,"method":"algorithm.list","params":[]}'
-        response = await self.request(querry)
+        query = '{"id":1,"method":"algorithm.list","params":[]}'
+        response = await self.request(query)
         if response is not None:
             algorithms = {}
             for algorithm in response.get("algorithms"):
@@ -81,8 +81,8 @@ class ExcavatorAPI:
 
     async def get_workers(self) -> ClientResponse | None:
         """Get the workers"""
-        querry = '{"id":1,"method":"worker.list","params":[]}'
-        response = await self.request(querry)
+        query = '{"id":1,"method":"worker.list","params":[]}'
+        response = await self.request(query)
         if response is not None:
             workers = {}
             for worker in response.get("workers"):
@@ -94,14 +94,14 @@ class ExcavatorAPI:
             return workers
 
     @staticmethod
-    def format_host_adress(host_adress: str) -> str:
+    def format_host_address(host_address: str) -> str:
         """Add http if missing"""
-        if not host_adress.startswith("http://") and not host_adress.startswith(
+        if not host_address.startswith("http://") and not host_address.startswith(
             "https://"
         ):
-            host_adress = "http://" + host_adress
-        return host_adress
+            host_address = "http://" + host_address
+        return host_address
 
     def set_logging(self, enable: bool) -> None:
         """Enable or disable logging of the made requests"""
-        self._enable_loggigng = enable
+        self._enable_logging = enable
