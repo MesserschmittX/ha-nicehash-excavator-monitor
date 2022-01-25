@@ -1,3 +1,9 @@
+
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+![HACS Action](https://github.com/MesserschmittX/hacs-nicehash-excavator/actions/workflows/hacs.yml/badge.svg?style=for-the-badge)
+![Validate with hassfest](https://github.com/MesserschmittX/hacs-nicehash-excavator/actions/workflows/hassfest.yml/badge.svg)
+
+
 # Nicehash Excavator Monitor
 Home Assistant integration for Nicehash Excavator miner API
 
