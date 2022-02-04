@@ -20,11 +20,23 @@ Available Sensors:
  - Overtemp (true/false) for every card
  - Device information will show the Excavator version and build as well as a list of the installed GPU models
 
+
 Requirements:
 ------
-- Home Assistant core-2021.12.5
+- Home Assistant core-2021.12.5 or higher
 - Excavator needs to be reachable from the network
 - Your mining pc needs to be reachable from your Home Assistant instance
+
+
+Install:
+------
+  - This integration is available in HACS (Home Assistant Community Store). HACS is a third party community store and is not included in Home Assistant out of the box
+  - After downloading the integration you can add it to Home Assistant under Configuration -> Devices & Services
+  - Miner name is the name of your mining rig
+  - Host address is your_mining_pc_ip_v4
+  - Excavator port is the unused_port_of_your_choise
+  - The update interval is between 1 and 600 seconds (can be changed later in device configuration)
+  - Confirm the dialog and your mining rig will be added shortly after testing the connection
 
 
 Make Excavator available from the network:
@@ -46,17 +58,6 @@ Make Excavator available from the network:
    - Create an inbound firewall rule allowing the unused_port_of_your_choise to be accessed
    - You should now be able to access the Excavator API via your network
 
-
-Set up the Home Assistant Integration:
-------
-  - Copy the nicehash_excavator folder to your custom_components folder inside your config
-  - Restart Home Assistant
-  - Add the Nicehash Excavator integration to your integrations in the Home Assistant settings
-  - Miner name is the name of your miner rig
-  - Host address is your_mining_pc_ip_v4
-  - Excavator port is the unused_port_of_your_choise
-  - The update interval is between 1 and 600 seconds (can still be changed later)
-  - Confirm the dialog and after testing the connection your mining rig will be added
 
 Misc:
 ------
