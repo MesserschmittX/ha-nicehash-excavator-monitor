@@ -4,12 +4,16 @@ from __future__ import annotations
 import logging
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .const import CONFIG_UPDATE_INTERVAL, DOMAIN, PLATFORMS
+from .const import CONFIG_UPDATE_INTERVAL, DOMAIN
 from .mining_rig import MiningRig
 
 _LOGGER = logging.getLogger(__name__)
+
+
+PLATFORMS = [Platform.SENSOR, Platform.SWITCH]
 
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:

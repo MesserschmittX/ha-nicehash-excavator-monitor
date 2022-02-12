@@ -2,20 +2,17 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from aiohttp.client_exceptions import ClientConnectorError
 import voluptuous as vol
-from voluptuous.validators import All, Range
 
-from homeassistant import exceptions
 from homeassistant.config_entries import (
     CONN_CLASS_LOCAL_PUSH,
     ConfigEntry,
     ConfigFlow,
     OptionsFlow,
 )
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
@@ -23,13 +20,15 @@ from .const import (
     CONFIG_HOST_PORT,
     CONFIG_NAME,
     CONFIG_UPDATE_INTERVAL,
+    CONFIG_UPDATE_INTERVAL_FAST,
     DEFAULT_HOST_PORT,
     DEFAULT_UPDATE_INTERVAL,
+    DEFAULT_UPDATE_INTERVAL_FAST,
     DOMAIN,
     ERROR_CANNOT_CONNECT,
     ERROR_INVALID_PORT,
+    ERROR_INVALID_UPDATE_INTERVAL,
     ERROR_NO_RESPONSE,
-    ERROR_UNKNOWN,
     MAX_UPDATE_INTERVAL,
     MIN_UPDATE_INTERVAL,
 )
@@ -41,31 +40,53 @@ MAIN_DATA_SCHEMA = {
     vol.Required(CONFIG_NAME): str,
     vol.Required(CONFIG_HOST_ADDRESS): str,
     vol.Required(CONFIG_HOST_PORT, default=DEFAULT_HOST_PORT): int,
-    vol.Required(CONFIG_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL): All(
-        int, Range(min=MIN_UPDATE_INTERVAL, max=MAX_UPDATE_INTERVAL)
-    ),
+    vol.Required(CONFIG_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL): int,
+    vol.Required(
+        CONFIG_UPDATE_INTERVAL_FAST, default=DEFAULT_UPDATE_INTERVAL_FAST
+    ): int,
 }
 
 
-async def validate_input(hass: HomeAssistant, data: dict) -> dict[str, Any]:
+async def get_errors(data: dict) -> dict[str, any]:
     """Validate the user input"""
+    errors = await validate_update_intervals(data)
 
     if data[CONFIG_HOST_PORT] < 1 or data[CONFIG_HOST_PORT] > 65535:
-        raise InvalidPort
+        _LOGGER.error(ERROR_INVALID_PORT)
+        errors[CONFIG_HOST_PORT] = ERROR_INVALID_PORT
 
-    excavator = ExcavatorAPI(data[CONFIG_HOST_ADDRESS], data[CONFIG_HOST_PORT])
+    try:
+        excavator = ExcavatorAPI(data[CONFIG_HOST_ADDRESS], data[CONFIG_HOST_PORT])
+        result = await excavator.test_connection()
+        if not result:
+            _LOGGER.error(ERROR_NO_RESPONSE)
+            errors["base"] = ERROR_NO_RESPONSE
+    except ClientConnectorError as err:
+        _LOGGER.error(err)
+        errors[CONFIG_HOST_ADDRESS] = ERROR_CANNOT_CONNECT
+        errors[CONFIG_HOST_PORT] = ERROR_CANNOT_CONNECT
 
-    result = await excavator.test_connection()
-    if not result:
-        raise NoResponse
+    return errors
 
-    return {
-        "title": data[CONFIG_NAME],
-        CONFIG_NAME: data[CONFIG_NAME],
-        CONFIG_HOST_ADDRESS: [CONFIG_HOST_ADDRESS],
-        CONFIG_HOST_PORT: data[CONFIG_HOST_PORT],
-        CONFIG_UPDATE_INTERVAL: data[CONFIG_UPDATE_INTERVAL],
-    }
+
+async def validate_update_intervals(data: dict) -> dict[str, any]:
+    """Validate the user input"""
+    errors = {}
+    if (
+        data[CONFIG_UPDATE_INTERVAL] < MIN_UPDATE_INTERVAL
+        or data[CONFIG_UPDATE_INTERVAL] > MAX_UPDATE_INTERVAL
+    ):
+        _LOGGER.error(ERROR_INVALID_UPDATE_INTERVAL)
+        errors[CONFIG_UPDATE_INTERVAL] = ERROR_INVALID_UPDATE_INTERVAL
+
+    if (
+        data[CONFIG_UPDATE_INTERVAL_FAST] < MIN_UPDATE_INTERVAL
+        or data[CONFIG_UPDATE_INTERVAL_FAST] > MAX_UPDATE_INTERVAL
+    ):
+        _LOGGER.error(ERROR_INVALID_UPDATE_INTERVAL)
+        errors[CONFIG_UPDATE_INTERVAL_FAST] = ERROR_INVALID_UPDATE_INTERVAL
+
+    return errors
 
 
 class MainConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -79,25 +100,11 @@ class MainConfigFlow(ConfigFlow, domain=DOMAIN):
 
         errors = {}
         if user_input is not None:
-            try:
-                validated_input = await validate_input(self.hass, user_input)
+            errors = await get_errors(user_input)
+            if not errors:
                 return self.async_create_entry(
-                    title=validated_input["title"], data=user_input
+                    title=user_input[CONFIG_NAME], data=user_input
                 )
-
-            except NoResponse as err:
-                _LOGGER.error(err)
-                errors["base"] = ERROR_NO_RESPONSE
-            except InvalidPort as err:
-                _LOGGER.error(err)
-                errors[CONFIG_HOST_PORT] = ERROR_INVALID_PORT
-            except ClientConnectorError as err:
-                _LOGGER.error(err)
-                errors[CONFIG_HOST_ADDRESS] = ERROR_CANNOT_CONNECT
-                errors[CONFIG_HOST_PORT] = ERROR_CANNOT_CONNECT
-            except Exception as err:
-                _LOGGER.error(err)
-                errors["base"] = ERROR_UNKNOWN
 
         return self.async_show_form(
             step_id="user", data_schema=vol.Schema(MAIN_DATA_SCHEMA), errors=errors
@@ -118,11 +125,17 @@ class OptionsFlowHandler(OptionsFlow):
 
     async def async_step_init(self, user_input=None) -> FlowResult:
         """Manage the options."""
+        errors = {}
         if user_input is not None:
-            new = {**self.config_entry.data}
-            new[CONFIG_UPDATE_INTERVAL] = user_input[CONFIG_UPDATE_INTERVAL]
-            self.hass.config_entries.async_update_entry(self.config_entry, data=new)
-            return self.async_create_entry(title="", data=user_input)
+            errors = await validate_update_intervals(user_input)
+            if not errors:
+                new = {**self.config_entry.data}
+                new[CONFIG_UPDATE_INTERVAL] = user_input[CONFIG_UPDATE_INTERVAL]
+                new[CONFIG_UPDATE_INTERVAL_FAST] = user_input[
+                    CONFIG_UPDATE_INTERVAL_FAST
+                ]
+                self.hass.config_entries.async_update_entry(self.config_entry, data=new)
+                return self.async_create_entry(title="", data=user_input)
 
         return self.async_show_form(
             step_id="init",
@@ -131,15 +144,12 @@ class OptionsFlowHandler(OptionsFlow):
                     vol.Required(
                         CONFIG_UPDATE_INTERVAL,
                         default=self.config_entry.data.get(CONFIG_UPDATE_INTERVAL),
-                    ): All(int, Range(min=MIN_UPDATE_INTERVAL, max=MAX_UPDATE_INTERVAL))
+                    ): int,
+                    vol.Required(
+                        CONFIG_UPDATE_INTERVAL_FAST,
+                        default=self.config_entry.data.get(CONFIG_UPDATE_INTERVAL_FAST),
+                    ): int,
                 }
             ),
+            errors=errors,
         )
-
-
-class NoResponse(exceptions.HomeAssistantError):
-    """Error to indicate no response was received."""
-
-
-class InvalidPort(exceptions.HomeAssistantError):
-    """Error to indicate there is an invalid port."""
