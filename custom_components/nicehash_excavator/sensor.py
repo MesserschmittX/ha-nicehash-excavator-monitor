@@ -21,6 +21,9 @@ async def async_setup_entry(
     new_devices.append(OnlineSensor(mining_rig, config_entry))
     new_devices.append(GpuModelsSensor(mining_rig, config_entry))
     new_devices.append(GpuCountSensor(mining_rig, config_entry))
+    new_devices.append(TotalPowerSensor(mining_rig, config_entry))
+    new_devices.append(CPUSensor(mining_rig, config_entry))
+    new_devices.append(RAMSensor(mining_rig, config_entry))
 
     for card_id in mining_rig.cards.keys():
         new_devices.append(GpuTempSensor(mining_rig, config_entry, card_id))
@@ -399,3 +402,55 @@ class GpuCountSensor(RigSensor):
     @property
     def state(self) -> int:
         return len(self._mining_rig.cards)
+
+
+class TotalPowerSensor(RigSensor):
+    """Miner Power Sensor."""
+
+    device_class = SensorDeviceClass.POWER
+    _attr_unit_of_measurement = POWER_WATT
+
+    def __init__(self, mining_rig: MiningRig, config_entry: ConfigEntry) -> None:
+        """Initialize the sensor."""
+        super().__init__(mining_rig, config_entry)
+        self._attr_unique_id = f"{self._rig_name}_power"
+        self._attr_name = f"{self._rig_name} Power"
+
+    @property
+    def state(self) -> float:
+        power = 0
+        for card_id in self._mining_rig.cards.keys():
+            power += self._mining_rig.cards.get(card_id).get("gpu_power_usage")
+        return power
+
+
+class CPUSensor(RigSensor):
+    """CPU Sensor."""
+
+    _attr_unit_of_measurement = PERCENTAGE
+
+    def __init__(self, mining_rig: MiningRig, config_entry: ConfigEntry) -> None:
+        """Initialize the sensor."""
+        super().__init__(mining_rig, config_entry)
+        self._attr_unique_id = f"{self._rig_name}_cpu"
+        self._attr_name = f"{self._rig_name} CPU"
+
+    @property
+    def state(self) -> float:
+        return round(self._mining_rig.info.get("cpu_load"), 2)
+
+
+class RAMSensor(RigSensor):
+    """RAM Sensor."""
+
+    _attr_unit_of_measurement = PERCENTAGE
+
+    def __init__(self, mining_rig: MiningRig, config_entry: ConfigEntry) -> None:
+        """Initialize the sensor."""
+        super().__init__(mining_rig, config_entry)
+        self._attr_unique_id = f"{self._rig_name}_ram"
+        self._attr_name = f"{self._rig_name} RAM"
+
+    @property
+    def state(self) -> float:
+        return round(self._mining_rig.info.get("ram_load"))
