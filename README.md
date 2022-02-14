@@ -7,6 +7,8 @@
 # Nicehash Excavator Monitor
 Home Assistant integration for Nicehash Excavator miner API
 
+<!--Now with accompanying [UI Card](https://github.com/MesserschmittX/lovelace-nicehash-excavator-monitor-card) to better display all sensors.-->
+
 (Excavator API Doku: https://github.com/nicehash/excavator/tree/master/api)
 
 
@@ -17,8 +19,14 @@ Available Sensors:
  - GPU temp for every card
  - Hotspot temp for every card
  - Vram temp for every card
+ - CPU & RAM usage
  - Overtemp (true/false) for every card
  - Device information will show the Excavator version and build as well as a list of the installed GPU models
+
+
+Available Switches:
+------
+- Switch for two diferent update speeds
 
 
 Requirements:
@@ -35,7 +43,7 @@ Install:
   - Miner name is the name of your mining rig
   - Host address is your_mining_pc_ip_v4
   - Excavator port is the unused_port_of_your_choise
-  - The update interval is between 1 and 600 seconds (can be changed later in device configuration)
+  - The update intervals are between 1 and 3600 seconds (can be changed later in device configuration)
   - Confirm the dialog and your mining rig will be added shortly after testing the connection
 
 
