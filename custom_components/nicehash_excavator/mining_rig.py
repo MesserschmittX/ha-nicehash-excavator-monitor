@@ -1,4 +1,4 @@
-"""A demonstration 'hub' that connects several devices."""
+"""A MiningRig that connects several devices."""
 from __future__ import annotations
 
 import datetime
@@ -13,6 +13,7 @@ from .const import (
     CONFIG_NAME,
     CONFIG_UPDATE_INTERVAL,
 )
+from .data_containers import Algorithm, GraphicsCard, Worker
 from .excavator import ExcavatorAPI
 
 
@@ -28,7 +29,7 @@ class MiningRig:
             config_entry.data[CONFIG_HOST_ADDRESS], config_entry.data[CONFIG_HOST_PORT]
         )
         self.algorithms = {}
-        self.cards = {}
+        self.devices = {}
         self.workers = {}
         self.online = True
         self.info = None
@@ -60,7 +61,7 @@ class MiningRig:
     async def update(self, event=None) -> None:
         """Update MiningRig via Excavator API."""
         self.algorithms = await self._api.get_algorithms()
-        self.cards = await self._api.get_devices()
+        self.devices = await self._api.get_devices()
         self.workers = await self._api.get_workers()
         self.info = await self._api.get_rig_info()
         if self.info is None:
@@ -83,3 +84,21 @@ class MiningRig:
                 hass, self.update, datetime.timedelta(seconds=update_interval)
             )
         )
+
+    def get_algorithm(self, algorithm_id) -> Algorithm | None:
+        """Get algorithm by id."""
+        if algorithm_id in self.algorithms:
+            return self.algorithms[algorithm_id]
+        return None
+
+    def get_device(self, device_id) -> GraphicsCard | None:
+        """Get device by id."""
+        if device_id in self.devices:
+            return self.devices[device_id]
+        return None
+
+    def get_worker(self, worker_id) -> Worker | None:
+        """Get worker by id."""
+        if worker_id in self.workers:
+            return self.workers[worker_id]
+        return None

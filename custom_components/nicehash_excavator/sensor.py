@@ -25,26 +25,29 @@ async def async_setup_entry(
     new_devices.append(CPUSensor(mining_rig, config_entry))
     new_devices.append(RAMSensor(mining_rig, config_entry))
 
-    for card_id in mining_rig.cards.keys():
-        new_devices.append(GpuTempSensor(mining_rig, config_entry, card_id))
-        new_devices.append(VRAMTempSensor(mining_rig, config_entry, card_id))
-        new_devices.append(HotspotTempSensor(mining_rig, config_entry, card_id))
-        new_devices.append(OvertemperatureSensor(mining_rig, config_entry, card_id))
-        new_devices.append(FanSensor(mining_rig, config_entry, card_id))
-        new_devices.append(PowerSensor(mining_rig, config_entry, card_id))
-        new_devices.append(ModelSensor(mining_rig, config_entry, card_id))
-        new_devices.append(VendorSensor(mining_rig, config_entry, card_id))
-    for algorithm_id in mining_rig.algorithms.keys():
+    for device_id in mining_rig.devices:
+        new_devices.append(GpuTempSensor(mining_rig, config_entry, device_id))
+        new_devices.append(VRAMTempSensor(mining_rig, config_entry, device_id))
+        new_devices.append(HotspotTempSensor(mining_rig, config_entry, device_id))
+        new_devices.append(OvertempSensor(mining_rig, config_entry, device_id))
+        new_devices.append(FanSensor(mining_rig, config_entry, device_id))
+        new_devices.append(PowerSensor(mining_rig, config_entry, device_id))
+        new_devices.append(ModelSensor(mining_rig, config_entry, device_id))
+        new_devices.append(VendorSensor(mining_rig, config_entry, device_id))
+
+    for algorithm_id in mining_rig.algorithms:
         new_devices.append(
             AlgorithmHashrateSensor(mining_rig, config_entry, algorithm_id)
         )
-    for worker_id in mining_rig.workers.keys():
-        for algorithm_id in mining_rig.workers[worker_id].get("algorithms").keys():
+
+    for worker_id in mining_rig.workers:
+        for algorithm_id in mining_rig.get_worker(worker_id).algorithms:
             new_devices.append(
                 WorkerAlgorithmHashrateSensor(
                     mining_rig, config_entry, worker_id, algorithm_id
                 )
             )
+
     if new_devices:
         async_add_entities(new_devices)
 
@@ -83,23 +86,8 @@ class RigSensor(SensorBase):
     @property
     def device_info(self) -> any:
         """Information about this entity/device."""
-        gpu_models = {}
-        for card_id in self._mining_rig.cards.keys():
-            gpy_model = self._mining_rig.cards.get(card_id).get("name")
-            if gpy_model in gpu_models:
-                gpu_count = gpu_models[gpy_model]
-                gpu_models[gpy_model] = gpu_count + 1
-            else:
-                gpu_models[gpy_model] = 1
 
-        model_string = ""
-        for card in gpu_models.keys():
-            if model_string:
-                model_string = model_string + "; " + str(gpu_models[card]) + "x " + card
-            else:
-                model_string = str(gpu_models[card]) + "x " + card
-
-        return {
+        info = {
             "identifiers": {
                 (
                     DOMAIN,
@@ -107,26 +95,53 @@ class RigSensor(SensorBase):
                 )
             },
             "name": f"{self._rig_name}",
-            "sw_version": f"{self._mining_rig.info.get('version')}, Build: {self._mining_rig.info.get('build_number')}",
-            "uptime": f"{self._mining_rig.info.get('uptime') / 60 / 60}h",
-            "model": model_string,
             "manufacturer": "NiceHash",
         }
+        if self._mining_rig.info:
+            info[
+                "sw_version"
+            ] = f"{self._mining_rig.info.version}, Build: {self._mining_rig.info.build_number}"
+            info["uptime"] = f"{self._mining_rig.info.uptime / 60 / 60}h"
+
+        gpu_models: dict[str, int]
+        gpu_models = {}
+        if self._mining_rig.devices:
+            for device_id in self._mining_rig.devices:
+                gpu_model = self._mining_rig.get_device(device_id).name
+                if gpu_model in gpu_models:
+                    gpu_count = gpu_models[gpu_model]
+                    gpu_models[gpu_model] = gpu_count + 1
+                else:
+                    gpu_models[gpu_model] = 1
+
+            model_string = ""
+            for gpu_model, gpu_count in gpu_models.items():
+                if model_string:
+                    model_string = (
+                        model_string + "; " + str(gpu_count) + "x " + gpu_model
+                    )
+                else:
+                    model_string = str(gpu_count) + "x " + gpu_model
+
+            info["model"] = model_string
+
+        return info
 
 
-class CardSensorBase(SensorBase):
-    """Base representation of a Graphics card Sensor."""
+class DeviceSensorBase(SensorBase):
+    """Base representation of a Graphics device Sensor."""
 
     def __init__(
-        self, mining_rig: MiningRig, card_id: any, config_entry: ConfigEntry
+        self,
+        mining_rig: MiningRig,
+        device_id: int,
+        config_entry: ConfigEntry,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(mining_rig, config_entry)
-        self._card_id = card_id
-        self._card_name = (
-            f"GPU {self._mining_rig.cards.get(self._card_id).get('device_id')}"
-        )
-        self._card_uuid = self._mining_rig.cards.get(self._card_id).get("uuid")
+        self._device_id = device_id
+        self._device_name = f"GPU {device_id}"
+        self._device_uuid = mining_rig.get_device(device_id).uuid
 
     @property
     def device_info(self) -> any:
@@ -136,12 +151,12 @@ class CardSensorBase(SensorBase):
             "identifiers": {
                 (
                     DOMAIN,
-                    self._card_uuid,
+                    self._device_uuid,
                 )
             },
-            "name": self._card_name,
-            "model": self._mining_rig.cards.get(self._card_id).get("name"),
-            "manufacturer": self._mining_rig.cards.get(self._card_id).get("subvendor"),
+            "name": self._device_name,
+            "model": self._mining_rig.get_device(self._device_id).name,
+            "manufacturer": self._mining_rig.get_device(self._device_id).subvendor,
             "via_device": (
                 DOMAIN,
                 f"{self._rig_name} Excavator",
@@ -149,149 +164,165 @@ class CardSensorBase(SensorBase):
         }
 
 
-class GpuTempSensor(CardSensorBase):
+class GpuTempSensor(DeviceSensorBase):
     """GPU temp sensor."""
 
     device_class = SensorDeviceClass.TEMPERATURE
     _attr_unit_of_measurement = TEMP_CELSIUS
 
     def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, card_id: any
+        self, mining_rig: MiningRig, config_entry: ConfigEntry, device_id: int
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(mining_rig, card_id, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_{self._card_uuid}_temp"
-        self._attr_name = f"{self._rig_name} {self._card_name} GPU"
+        super().__init__(mining_rig, device_id, config_entry)
+        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_temp"
+        self._attr_name = f"{self._rig_name} {self._device_name} GPU"
 
     @property
     def state(self) -> float:
-        return self._mining_rig.cards.get(self._card_id).get("gpu_temp")
+        if self._mining_rig.get_device(self._device_id):
+            return self._mining_rig.get_device(self._device_id).gpu_temp
+        return "unavailable"
 
 
-class VRAMTempSensor(CardSensorBase):
+class VRAMTempSensor(DeviceSensorBase):
     """VRAM temp Sensor."""
 
     device_class = SensorDeviceClass.TEMPERATURE
     _attr_unit_of_measurement = TEMP_CELSIUS
 
     def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, _card_id: any
+        self, mining_rig: MiningRig, config_entry: ConfigEntry, device_id: int
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(mining_rig, _card_id, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_{self._card_uuid}_vram_temp"
-        self._attr_name = f"{self._rig_name} {self._card_name} VRAM"
+        super().__init__(mining_rig, device_id, config_entry)
+        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_vram_temp"
+        self._attr_name = f"{self._rig_name} {self._device_name} VRAM"
 
     @property
     def state(self) -> float:
-        return self._mining_rig.cards.get(self._card_id).get("__vram_temp")
+        if self._mining_rig.get_device(self._device_id):
+            return self._mining_rig.get_device(self._device_id).vram_temp
+        return "unavailable"
 
 
-class HotspotTempSensor(CardSensorBase):
+class HotspotTempSensor(DeviceSensorBase):
     """Hotspot Sensor."""
 
     device_class = SensorDeviceClass.TEMPERATURE
     _attr_unit_of_measurement = TEMP_CELSIUS
 
     def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, _card_id: any
+        self, mining_rig: MiningRig, config_entry: ConfigEntry, device_id: int
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(mining_rig, _card_id, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_{self._card_uuid}_hotspot_temp"
-        self._attr_name = f"{self._rig_name} {self._card_name} Hotspot"
+        super().__init__(mining_rig, device_id, config_entry)
+        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_hotspot_temp"
+        self._attr_name = f"{self._rig_name} {self._device_name} Hotspot"
 
     @property
     def state(self) -> float:
-        return self._mining_rig.cards.get(self._card_id).get("__hotspot_temp")
+        if self._mining_rig.get_device(self._device_id):
+            return self._mining_rig.get_device(self._device_id).hotspot_temp
+        return "unavailable"
 
 
-class FanSensor(CardSensorBase):
+class FanSensor(DeviceSensorBase):
     """Fan Sensor."""
 
     _attr_unit_of_measurement = PERCENTAGE
 
     def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, _card_id: any
+        self, mining_rig: MiningRig, config_entry: ConfigEntry, device_id: int
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(mining_rig, _card_id, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_{self._card_uuid}_fan"
-        self._attr_name = f"{self._rig_name} {self._card_name} Fan"
+        super().__init__(mining_rig, device_id, config_entry)
+        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_fan"
+        self._attr_name = f"{self._rig_name} {self._device_name} Fan"
 
     @property
     def state(self) -> float:
-        return self._mining_rig.cards.get(self._card_id).get("gpu_fan_speed")
+        if self._mining_rig.get_device(self._device_id):
+            return self._mining_rig.get_device(self._device_id).gpu_fan_speed
+        return "unavailable"
 
 
-class OvertemperatureSensor(CardSensorBase):
+class OvertempSensor(DeviceSensorBase):
     """Overtemp Sensor."""
 
     def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, _card_id: any
+        self, mining_rig: MiningRig, config_entry: ConfigEntry, device_id: int
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(mining_rig, _card_id, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_{self._card_uuid}_overtemp"
-        self._attr_name = f"{self._rig_name} {self._card_name} Overtemp"
+        super().__init__(mining_rig, device_id, config_entry)
+        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_overtemp"
+        self._attr_name = f"{self._rig_name} {self._device_name} Overtemp"
 
     @property
     def state(self) -> bool:
-        return self._mining_rig.cards.get(self._card_id).get("too_hot")
+        if self._mining_rig.get_device(self._device_id):
+            return self._mining_rig.get_device(self._device_id).too_hot
+        return "unavailable"
 
 
-class PowerSensor(CardSensorBase):
+class PowerSensor(DeviceSensorBase):
     """Power Sensor."""
 
     device_class = SensorDeviceClass.POWER
     _attr_unit_of_measurement = POWER_WATT
 
     def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, _card_id: any
+        self, mining_rig: MiningRig, config_entry: ConfigEntry, device_id: int
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(mining_rig, _card_id, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_{self._card_uuid}_power"
-        self._attr_name = f"{self._rig_name} {self._card_name} Power"
+        super().__init__(mining_rig, device_id, config_entry)
+        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_power"
+        self._attr_name = f"{self._rig_name} {self._device_name} Power"
 
     @property
     def state(self) -> float:
-        return self._mining_rig.cards.get(self._card_id).get("gpu_power_usage")
+        if self._mining_rig.get_device(self._device_id):
+            return self._mining_rig.get_device(self._device_id).gpu_power_usage
+        return "unavailable"
 
 
-class ModelSensor(CardSensorBase):
+class ModelSensor(DeviceSensorBase):
     """Model Sensor."""
 
     def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, _card_id: any
+        self, mining_rig: MiningRig, config_entry: ConfigEntry, device_id: int
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(mining_rig, _card_id, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_{self._card_uuid}_gpu_model"
-        self._attr_name = f"{self._rig_name} {self._card_name} GPU Model"
+        super().__init__(mining_rig, device_id, config_entry)
+        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_gpu_model"
+        self._attr_name = f"{self._rig_name} {self._device_name} GPU Model"
 
     @property
     def state(self) -> str:
-        return self._mining_rig.cards.get(self._card_id).get("name")
+        if self._mining_rig.get_device(self._device_id):
+            return self._mining_rig.get_device(self._device_id).name
+        return "unavailable"
 
 
-class VendorSensor(CardSensorBase):
+class VendorSensor(DeviceSensorBase):
     """Vendor Sensor."""
 
     def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, _card_id: any
+        self, mining_rig: MiningRig, config_entry: ConfigEntry, device_id: int
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(mining_rig, _card_id, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_{self._card_uuid}_vendor_id"
-        self._attr_name = f"{self._rig_name} {self._card_name} Vendor ID"
+        super().__init__(mining_rig, device_id, config_entry)
+        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_vendor_id"
+        self._attr_name = f"{self._rig_name} {self._device_name} Vendor ID"
 
     @property
     def state(self) -> str:
-        return self._mining_rig.cards.get(self._card_id).get("subvendor")
+        if self._mining_rig.get_device(self._device_id):
+            return self._mining_rig.get_device(self._device_id).subvendor
+        return "unavailable"
 
 
-class WorkerAlgorithmHashrateSensor(CardSensorBase):
+class WorkerAlgorithmHashrateSensor(DeviceSensorBase):
     """Hashrate Sensor per GPU and Algorithm ."""
 
     _attr_unit_of_measurement = "Mh/s"
@@ -300,35 +331,33 @@ class WorkerAlgorithmHashrateSensor(CardSensorBase):
         self,
         mining_rig: MiningRig,
         config_entry: ConfigEntry,
-        worker_id: any,
-        algorithm_id: any,
+        worker_id: int,
+        algorithm_id: int,
     ) -> None:
         """Initialize the sensor."""
-        for card_id in mining_rig.cards.keys():
-            if mining_rig.cards.get(card_id).get("device_id") == mining_rig.workers.get(
-                worker_id
-            ).get("device_id"):
-                self._card_id = card_id
+        for device_id in mining_rig.devices:
+            if device_id == mining_rig.get_worker(worker_id).device_id:
+                self._device_id = device_id
                 break
 
-        super().__init__(mining_rig, self._card_id, config_entry)
+        super().__init__(mining_rig, self._device_id, config_entry)
         self._worker_id = worker_id
         self._algorithm_id = algorithm_id
-        self._attr_unique_id = f'{self._rig_name}_{self._card_uuid}_{self._mining_rig.workers.get(self._card_id).get("algorithms").get(self._algorithm_id).get("name")}'
-        self._attr_name = f'{self._rig_name} {self._card_name} {self._mining_rig.workers.get(self._card_id).get("algorithms").get(self._algorithm_id).get("name")}'
+        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_{self._mining_rig.get_worker(worker_id).algorithms[algorithm_id].name}"
+        self._attr_name = f"{self._rig_name} {self._device_name} {self._mining_rig.get_worker(worker_id).algorithms[algorithm_id].name}"
 
     @property
     def state(self) -> float:
-        if self._mining_rig.workers.get(self._card_id, None):
+        worker = self._mining_rig.get_worker(self._worker_id)
+        if worker and worker.algorithms[self._algorithm_id]:
             return round(
-                self._mining_rig.workers.get(self._card_id)
-                .get("algorithms")
-                .get(self._algorithm_id)
-                .get("speed")
+                self._mining_rig.get_worker(self._worker_id)
+                .algorithms[self._algorithm_id]
+                .speed
                 / 1000000,
                 2,
             )
-        return "Unavailable"
+        return "unavailable"
 
 
 class AlgorithmHashrateSensor(RigSensor):
@@ -337,23 +366,21 @@ class AlgorithmHashrateSensor(RigSensor):
     _attr_unit_of_measurement = "Mh/s"
 
     def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, algorithm_id: any
+        self, mining_rig: MiningRig, config_entry: ConfigEntry, algorithm_id: int
     ) -> None:
         """Initialize the sensor."""
         super().__init__(mining_rig, config_entry)
         self._algorithm_id = algorithm_id
-        self._attr_unique_id = f'{self._rig_name}_{self._mining_rig.algorithms.get(self._algorithm_id).get("name")}_hashrate'
-        self._attr_name = f'{self._rig_name} {self._mining_rig.algorithms.get(self._algorithm_id).get("name")}'
+        self._attr_unique_id = f"{self._rig_name}_{self._mining_rig.get_algorithm(self._algorithm_id).name}_hashrate"
+        self._attr_name = f"{self._rig_name} {self._mining_rig.get_algorithm(self._algorithm_id).name}"
 
     @property
     def state(self) -> float:
-        if self._mining_rig.algorithms.get(self._algorithm_id, None):
+        if self._mining_rig.get_algorithm(self._algorithm_id):
             return round(
-                self._mining_rig.algorithms.get(self._algorithm_id).get("speed")
-                / 1000000,
-                2,
+                self._mining_rig.get_algorithm(self._algorithm_id).speed / 1000000, 2
             )
-        return "Unavailable"
+        return "unavailable"
 
 
 class OnlineSensor(RigSensor):
@@ -381,13 +408,15 @@ class GpuModelsSensor(RigSensor):
 
     @property
     def state(self) -> str:
-        cards = ""
-        for card_id in self._mining_rig.cards.keys():
-            cards += (
-                self._mining_rig.cards.get(card_id).get("name").replace("GeForce ", "")
-                + ", "
-            )
-        return cards[:-2] if len(cards[:-2]) <= 255 else "value to long"
+        devices = ""
+        if self._mining_rig.devices:
+            for device_id in self._mining_rig.devices:
+                devices += (
+                    self._mining_rig.get_device(device_id).name.replace("GeForce ", "")
+                    + ", "
+                )
+            return devices[:-2] if len(devices[:-2]) <= 255 else "value to long"
+        return "unavailable"
 
 
 class GpuCountSensor(RigSensor):
@@ -401,7 +430,9 @@ class GpuCountSensor(RigSensor):
 
     @property
     def state(self) -> int:
-        return len(self._mining_rig.cards)
+        if self._mining_rig.devices:
+            return len(self._mining_rig.devices)
+        return "unavailable"
 
 
 class TotalPowerSensor(RigSensor):
@@ -419,9 +450,11 @@ class TotalPowerSensor(RigSensor):
     @property
     def state(self) -> float:
         power = 0
-        for card_id in self._mining_rig.cards.keys():
-            power += self._mining_rig.cards.get(card_id).get("gpu_power_usage")
-        return power
+        if self._mining_rig.devices:
+            for device_id in self._mining_rig.devices:
+                power += self._mining_rig.get_device(device_id).gpu_power_usage
+            return power
+        return "unavailable"
 
 
 class CPUSensor(RigSensor):
@@ -437,7 +470,9 @@ class CPUSensor(RigSensor):
 
     @property
     def state(self) -> float:
-        return round(self._mining_rig.info.get("cpu_load"), 2)
+        if self._mining_rig.info:
+            return round(self._mining_rig.info.cpu_load, 2)
+        return "unavailable"
 
 
 class RAMSensor(RigSensor):
@@ -453,4 +488,6 @@ class RAMSensor(RigSensor):
 
     @property
     def state(self) -> float:
-        return round(self._mining_rig.info.get("ram_load"))
+        if self._mining_rig.info:
+            return round(self._mining_rig.info.ram_load)
+        return "unavailable"

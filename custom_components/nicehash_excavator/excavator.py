@@ -6,6 +6,8 @@ import logging
 import aiohttp
 from aiohttp.client_reqrep import ClientResponse
 
+from .data_containers import Algorithm, GraphicsCard, RigInfo, Worker
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -16,14 +18,14 @@ class ExcavatorAPI:
         """Init ExcavatorAPI."""
         self.host_address = self.format_host_address(host_address)
         self._host_port = host_port
-        self._enable_logging = False
+        self._enable_debug_logging = False
 
     async def request(self, query: str) -> ClientResponse | None:
         """Excavator API Request"""
 
         url = f"{self.host_address}:{self._host_port}/api?command={query}"
 
-        if self._enable_logging:
+        if self._enable_debug_logging:
             _LOGGER.info("GET %s", url)
 
         async with aiohttp.ClientSession() as session:
@@ -41,7 +43,8 @@ class ExcavatorAPI:
                         )
                     raise Exception(str(response.status) + ": " + response.reason)
             except Exception:
-                _LOGGER.warning("Error while getting data from %s", url)
+                if self._enable_debug_logging:
+                    _LOGGER.warning("Error while getting data from %s", url)
 
     async def test_connection(self) -> bool:
         """Test connectivity"""
@@ -51,47 +54,48 @@ class ExcavatorAPI:
             return True
         return False
 
-    async def get_rig_info(self) -> ClientResponse | None:
+    async def get_rig_info(self) -> RigInfo | None:
         """Get Rig Information"""
         query = '{"id":1,"method":"info","params":[]}'
         response = await self.request(query)
         if response is not None:
-            return response
+            return RigInfo(response)
         return None
 
-    async def get_devices(self) -> ClientResponse | None:
+    async def get_devices(self) -> dict[int, GraphicsCard] | None:
         """Get the devices"""
         query = '{"id":1,"method":"devices.get","params":[]}'
         response = await self.request(query)
         if response is not None:
             devices = {}
-            for device in response.get("devices"):
-                devices[device.get("device_id")] = device
+            for device_data in response.get("devices"):
+                card = GraphicsCard(device_data)
+                devices[card.id] = card
             return devices
 
-    async def get_algorithms(self) -> ClientResponse | None:
+    async def get_algorithms(self) -> dict[int, Algorithm] | None:
         """Get the Algorithms"""
         query = '{"id":1,"method":"algorithm.list","params":[]}'
         response = await self.request(query)
         if response is not None:
             algorithms = {}
-            for algorithm in response.get("algorithms"):
-                algorithms[algorithm.get("algorithm_id")] = algorithm
+            for algorithm_data in response.get("algorithms"):
+                algorithm = Algorithm(algorithm_data)
+                algorithms[algorithm.id] = algorithm
             return algorithms
+        return None
 
-    async def get_workers(self) -> ClientResponse | None:
+    async def get_workers(self) -> dict[int, Worker] | None:
         """Get the workers"""
         query = '{"id":1,"method":"worker.list","params":[]}'
         response = await self.request(query)
         if response is not None:
             workers = {}
-            for worker in response.get("workers"):
-                algorithms = {}
-                for algorithm in worker.get("algorithms"):
-                    algorithms[algorithm.get("id")] = algorithm
-                worker["algorithms"] = algorithms
-                workers[worker.get("worker_id")] = worker
+            for worker_data in response.get("workers"):
+                worker = Worker(worker_data)
+                workers[worker.id] = worker
             return workers
+        return None
 
     @staticmethod
     def format_host_address(host_address: str) -> str:
@@ -104,4 +108,4 @@ class ExcavatorAPI:
 
     def set_logging(self, enable: bool) -> None:
         """Enable or disable logging of the made requests"""
-        self._enable_logging = enable
+        self._enable_debug_logging = enable
