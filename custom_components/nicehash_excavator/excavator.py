@@ -45,6 +45,7 @@ class ExcavatorAPI:
             except Exception:
                 if self._enable_debug_logging:
                     _LOGGER.warning("Error while getting data from %s", url)
+                return None
 
     async def test_connection(self) -> bool:
         """Test connectivity"""
@@ -60,7 +61,7 @@ class ExcavatorAPI:
         response = await self.request(query)
         if response is not None:
             return RigInfo(response)
-        return None
+        return RigInfo()
 
     async def get_devices(self) -> dict[int, GraphicsCard] | None:
         """Get the devices"""

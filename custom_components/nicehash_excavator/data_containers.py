@@ -17,20 +17,20 @@ class GraphicsCard:
     vram_temp: int
     hotspot_temp: int
 
-    def __init__(self, data) -> None:
+    def __init__(self, data=None) -> None:
         """Init GraphicsCard."""
-        self.id = data.get("device_id")
-        self.name = data.get("name")
-        self.subvendor = data.get("subvendor")
-        self.uuid = data.get("uuid")
-        self.gpu_temp = data.get("gpu_temp")
-        self.gpu_load = data.get("gpu_load")
-        self.gpu_load_memctrl = data.get("gpu_load_memctrl")
-        self.gpu_power_usage = data.get("gpu_power_usage")
-        self.gpu_fan_speed = data.get("gpu_fan_speed")
-        self.too_hot = data.get("too_hot")
-        self.vram_temp = data.get("__vram_temp")
-        self.hotspot_temp = data.get("__hotspot_temp")
+        self.id = data.get("device_id") if data else "NaN"
+        self.name = data.get("name") if data else "NaN"
+        self.subvendor = data.get("subvendor") if data else "NaN"
+        self.uuid = data.get("uuid") if data else "NaN"
+        self.gpu_temp = data.get("gpu_temp") if data else "NaN"
+        self.gpu_load = data.get("gpu_load") if data else "NaN"
+        self.gpu_load_memctrl = data.get("gpu_load_memctrl") if data else "NaN"
+        self.gpu_power_usage = data.get("gpu_power_usage") if data else "NaN"
+        self.gpu_fan_speed = data.get("gpu_fan_speed") if data else "NaN"
+        self.too_hot = data.get("too_hot") if data else "NaN"
+        self.vram_temp = data.get("__vram_temp") if data else "NaN"
+        self.hotspot_temp = data.get("__hotspot_temp") if data else "NaN"
 
 
 class Algorithm:
@@ -40,9 +40,9 @@ class Algorithm:
     name: str
     speed: float
 
-    def __init__(self, data) -> None:
+    def __init__(self, data=None) -> None:
         """Init Algorithm."""
-        self.name = data.get("name")
+        self.name = data.get("name") if data else "NaN"
 
         if "algorithm_id" in data:
             self.id = data.get("algorithm_id")
@@ -70,16 +70,16 @@ class RigInfo:
     cpu_load: float
     ram_load: float
 
-    def __init__(self, data) -> None:
+    def __init__(self, data=None) -> None:
         """Init RigInfo."""
-        self.version = data.get("version")
-        self.build_platform = data.get("build_platform")
-        self.build_number = data.get("build_number")
-        self.excavator_cuda_ver = data.get("excavator_cuda_ver")
-        self.driver_cuda_ver = data.get("driver_cuda_ver")
-        self.uptime = data.get("uptime")
-        self.cpu_load = data.get("cpu_load")
-        self.ram_load = data.get("ram_load")
+        self.version = data.get("version") if data else "NaN"
+        self.build_platform = data.get("build_platform") if data else "NaN"
+        self.build_number = data.get("build_number") if data else "NaN"
+        self.excavator_cuda_ver = data.get("excavator_cuda_ver") if data else "NaN"
+        self.driver_cuda_ver = data.get("driver_cuda_ver") if data else "NaN"
+        self.uptime = data.get("uptime") if data else "NaN"
+        self.cpu_load = data.get("cpu_load") if data else "NaN"
+        self.ram_load = data.get("ram_load") if data else "NaN"
 
 
 class Worker:
@@ -90,14 +90,16 @@ class Worker:
     device_uuid: str
     algorithms: dict[int, Algorithm]
 
-    def __init__(self, data) -> None:
+    def __init__(self, data=None) -> None:
         """Init Worker."""
-        self.id = data.get("worker_id")
-        self.device_id = data.get("device_id")
-        self.device_uuid = data.get("device_uuid")
+        self.id = data.get("worker_id") if data else "NaN"
+        self.device_id = data.get("device_id") if data else "NaN"
+        self.device_uuid = data.get("device_uuid") if data else "NaN"
         self.algorithms = {}
 
         if "algorithms" in data:
             for algorithm_data in data.get("algorithms"):
                 algorithm = Algorithm(algorithm_data)
                 self.algorithms[algorithm.id] = algorithm
+        else:
+            self.algorithms = "NaN"

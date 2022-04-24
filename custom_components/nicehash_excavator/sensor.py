@@ -79,10 +79,6 @@ class SensorBase(Entity):
 class RigSensor(SensorBase):
     """Base representation of a Rig Sensor."""
 
-    def __init__(self, mining_rig: MiningRig, config_entry: ConfigEntry) -> None:
-        """Initialize the sensor."""
-        super().__init__(mining_rig, config_entry)
-
     @property
     def device_info(self) -> any:
         """Information about this entity/device."""
@@ -134,8 +130,8 @@ class DeviceSensorBase(SensorBase):
     def __init__(
         self,
         mining_rig: MiningRig,
-        device_id: int,
         config_entry: ConfigEntry,
+        device_id: int,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(mining_rig, config_entry)
@@ -170,13 +166,13 @@ class GpuTempSensor(DeviceSensorBase):
     device_class = SensorDeviceClass.TEMPERATURE
     _attr_unit_of_measurement = TEMP_CELSIUS
 
-    def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, device_id: int
-    ) -> None:
-        """Initialize the sensor."""
-        super().__init__(mining_rig, device_id, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_temp"
-        self._attr_name = f"{self._rig_name} {self._device_name} GPU"
+    @property
+    def name(self) -> str:
+        return f"{self._rig_name} {self._device_name} GPU"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._rig_name}_{self._device_uuid}_temp"
 
     @property
     def state(self) -> float:
@@ -191,13 +187,13 @@ class VRAMTempSensor(DeviceSensorBase):
     device_class = SensorDeviceClass.TEMPERATURE
     _attr_unit_of_measurement = TEMP_CELSIUS
 
-    def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, device_id: int
-    ) -> None:
-        """Initialize the sensor."""
-        super().__init__(mining_rig, device_id, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_vram_temp"
-        self._attr_name = f"{self._rig_name} {self._device_name} VRAM"
+    @property
+    def name(self) -> str:
+        return f"{self._rig_name} {self._device_name} VRAM"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._rig_name}_{self._device_uuid}_vram_temp"
 
     @property
     def state(self) -> float:
@@ -212,13 +208,13 @@ class HotspotTempSensor(DeviceSensorBase):
     device_class = SensorDeviceClass.TEMPERATURE
     _attr_unit_of_measurement = TEMP_CELSIUS
 
-    def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, device_id: int
-    ) -> None:
-        """Initialize the sensor."""
-        super().__init__(mining_rig, device_id, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_hotspot_temp"
-        self._attr_name = f"{self._rig_name} {self._device_name} Hotspot"
+    @property
+    def name(self) -> str:
+        return f"{self._rig_name} {self._device_name} Hotspot"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._rig_name}_{self._device_uuid}_hotspot_temp"
 
     @property
     def state(self) -> float:
@@ -232,13 +228,13 @@ class FanSensor(DeviceSensorBase):
 
     _attr_unit_of_measurement = PERCENTAGE
 
-    def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, device_id: int
-    ) -> None:
-        """Initialize the sensor."""
-        super().__init__(mining_rig, device_id, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_fan"
-        self._attr_name = f"{self._rig_name} {self._device_name} Fan"
+    @property
+    def name(self) -> str:
+        return f"{self._rig_name} {self._device_name} Fan"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._rig_name}_{self._device_uuid}_fan"
 
     @property
     def state(self) -> float:
@@ -250,13 +246,13 @@ class FanSensor(DeviceSensorBase):
 class OvertempSensor(DeviceSensorBase):
     """Overtemp Sensor."""
 
-    def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, device_id: int
-    ) -> None:
-        """Initialize the sensor."""
-        super().__init__(mining_rig, device_id, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_overtemp"
-        self._attr_name = f"{self._rig_name} {self._device_name} Overtemp"
+    @property
+    def name(self) -> str:
+        return f"{self._rig_name} {self._device_name} Overtemp"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._rig_name}_{self._device_uuid}_overtemp"
 
     @property
     def state(self) -> bool:
@@ -271,13 +267,13 @@ class PowerSensor(DeviceSensorBase):
     device_class = SensorDeviceClass.POWER
     _attr_unit_of_measurement = POWER_WATT
 
-    def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, device_id: int
-    ) -> None:
-        """Initialize the sensor."""
-        super().__init__(mining_rig, device_id, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_power"
-        self._attr_name = f"{self._rig_name} {self._device_name} Power"
+    @property
+    def name(self) -> str:
+        return f"{self._rig_name} {self._device_name} Power"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._rig_name}_{self._device_uuid}_power"
 
     @property
     def state(self) -> float:
@@ -289,13 +285,13 @@ class PowerSensor(DeviceSensorBase):
 class ModelSensor(DeviceSensorBase):
     """Model Sensor."""
 
-    def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, device_id: int
-    ) -> None:
-        """Initialize the sensor."""
-        super().__init__(mining_rig, device_id, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_gpu_model"
-        self._attr_name = f"{self._rig_name} {self._device_name} GPU Model"
+    @property
+    def name(self) -> str:
+        return f"{self._rig_name} {self._device_name} GPU Model"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._rig_name}_{self._device_uuid}_gpu_model"
 
     @property
     def state(self) -> str:
@@ -307,13 +303,13 @@ class ModelSensor(DeviceSensorBase):
 class VendorSensor(DeviceSensorBase):
     """Vendor Sensor."""
 
-    def __init__(
-        self, mining_rig: MiningRig, config_entry: ConfigEntry, device_id: int
-    ) -> None:
-        """Initialize the sensor."""
-        super().__init__(mining_rig, device_id, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_vendor_id"
-        self._attr_name = f"{self._rig_name} {self._device_name} Vendor ID"
+    @property
+    def name(self) -> str:
+        return f"{self._rig_name} {self._device_name} Vendor ID"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._rig_name}_{self._device_uuid}_vendor_id"
 
     @property
     def state(self) -> str:
@@ -340,11 +336,17 @@ class WorkerAlgorithmHashrateSensor(DeviceSensorBase):
                 self._device_id = device_id
                 break
 
-        super().__init__(mining_rig, self._device_id, config_entry)
+        super().__init__(mining_rig, config_entry, self._device_id)
         self._worker_id = worker_id
         self._algorithm_id = algorithm_id
-        self._attr_unique_id = f"{self._rig_name}_{self._device_uuid}_{self._mining_rig.get_worker(worker_id).algorithms[algorithm_id].name}"
-        self._attr_name = f"{self._rig_name} {self._device_name} {self._mining_rig.get_worker(worker_id).algorithms[algorithm_id].name}"
+
+    @property
+    def name(self) -> str:
+        return f"{self._rig_name} {self._device_name} {self._mining_rig.get_worker(self._worker_id).algorithms[self._algorithm_id].name}"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._rig_name}_{self._device_uuid}_{self._mining_rig.get_worker(self._worker_id).algorithms[self._algorithm_id].name}"
 
     @property
     def state(self) -> float:
@@ -371,8 +373,14 @@ class AlgorithmHashrateSensor(RigSensor):
         """Initialize the sensor."""
         super().__init__(mining_rig, config_entry)
         self._algorithm_id = algorithm_id
-        self._attr_unique_id = f"{self._rig_name}_{self._mining_rig.get_algorithm(self._algorithm_id).name}_hashrate"
-        self._attr_name = f"{self._rig_name} {self._mining_rig.get_algorithm(self._algorithm_id).name}"
+
+    @property
+    def name(self) -> str:
+        return f"{self._rig_name} {self._mining_rig.get_algorithm(self._algorithm_id).name}"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._rig_name}_{self._mining_rig.get_algorithm(self._algorithm_id).name}_hashrate"
 
     @property
     def state(self) -> float:
@@ -386,11 +394,13 @@ class AlgorithmHashrateSensor(RigSensor):
 class OnlineSensor(RigSensor):
     """Online Sensor"""
 
-    def __init__(self, mining_rig: MiningRig, config_entry: ConfigEntry) -> None:
-        """Initialize the sensor."""
-        super().__init__(mining_rig, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_status"
-        self._attr_name = f"{self._rig_name} status"
+    @property
+    def name(self) -> str:
+        return f"{self._rig_name} status"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._rig_name}_status"
 
     @property
     def state(self) -> str:
@@ -400,11 +410,13 @@ class OnlineSensor(RigSensor):
 class GpuModelsSensor(RigSensor):
     """Gpu models Sensor"""
 
-    def __init__(self, mining_rig: MiningRig, config_entry: ConfigEntry) -> None:
-        """Initialize the sensor."""
-        super().__init__(mining_rig, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_gpu_models"
-        self._attr_name = f"{self._rig_name} GPU models"
+    @property
+    def name(self) -> str:
+        return f"{self._rig_name} GPU models"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._rig_name}_gpu_models"
 
     @property
     def state(self) -> str:
@@ -422,11 +434,13 @@ class GpuModelsSensor(RigSensor):
 class GpuCountSensor(RigSensor):
     """Gpu count Sensor"""
 
-    def __init__(self, mining_rig: MiningRig, config_entry: ConfigEntry) -> None:
-        """Initialize the sensor."""
-        super().__init__(mining_rig, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_gpu_count"
-        self._attr_name = f"{self._rig_name} GPU count"
+    @property
+    def name(self) -> str:
+        return f"{self._rig_name} GPU count"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._rig_name}_gpu_count"
 
     @property
     def state(self) -> int:
@@ -441,11 +455,13 @@ class TotalPowerSensor(RigSensor):
     device_class = SensorDeviceClass.POWER
     _attr_unit_of_measurement = POWER_WATT
 
-    def __init__(self, mining_rig: MiningRig, config_entry: ConfigEntry) -> None:
-        """Initialize the sensor."""
-        super().__init__(mining_rig, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_power"
-        self._attr_name = f"{self._rig_name} Power"
+    @property
+    def name(self) -> str:
+        return f"{self._rig_name} Power"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._rig_name}_power"
 
     @property
     def state(self) -> float:
@@ -462,11 +478,13 @@ class CPUSensor(RigSensor):
 
     _attr_unit_of_measurement = PERCENTAGE
 
-    def __init__(self, mining_rig: MiningRig, config_entry: ConfigEntry) -> None:
-        """Initialize the sensor."""
-        super().__init__(mining_rig, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_cpu"
-        self._attr_name = f"{self._rig_name} CPU"
+    @property
+    def name(self) -> str:
+        return f"{self._rig_name} CPU"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._rig_name}_cpu"
 
     @property
     def state(self) -> float:
@@ -480,11 +498,13 @@ class RAMSensor(RigSensor):
 
     _attr_unit_of_measurement = PERCENTAGE
 
-    def __init__(self, mining_rig: MiningRig, config_entry: ConfigEntry) -> None:
-        """Initialize the sensor."""
-        super().__init__(mining_rig, config_entry)
-        self._attr_unique_id = f"{self._rig_name}_ram"
-        self._attr_name = f"{self._rig_name} RAM"
+    @property
+    def name(self) -> str:
+        return f"{self._rig_name} RAM"
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._rig_name}_ram"
 
     @property
     def state(self) -> float:
