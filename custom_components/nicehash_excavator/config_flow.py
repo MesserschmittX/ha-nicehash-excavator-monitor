@@ -127,9 +127,11 @@ class OptionsFlowHandler(OptionsFlow):
         """Manage the options."""
         errors = {}
         if user_input is not None:
-            errors = await validate_update_intervals(user_input)
+            errors = await get_errors(user_input)
             if not errors:
                 new = {**self.config_entry.data}
+                new[CONFIG_HOST_ADDRESS] = user_input[CONFIG_HOST_ADDRESS]
+                new[CONFIG_HOST_PORT] = user_input[CONFIG_HOST_PORT]
                 new[CONFIG_UPDATE_INTERVAL] = user_input[CONFIG_UPDATE_INTERVAL]
                 new[CONFIG_UPDATE_INTERVAL_FAST] = user_input[
                     CONFIG_UPDATE_INTERVAL_FAST
@@ -141,6 +143,14 @@ class OptionsFlowHandler(OptionsFlow):
             step_id="init",
             data_schema=vol.Schema(
                 {
+                    vol.Required(
+                        CONFIG_HOST_ADDRESS,
+                        default=self.config_entry.data.get(CONFIG_HOST_ADDRESS),
+                    ): str,
+                    vol.Required(
+                        CONFIG_HOST_PORT,
+                        default=self.config_entry.data.get(CONFIG_HOST_PORT),
+                    ): int,
                     vol.Required(
                         CONFIG_UPDATE_INTERVAL,
                         default=self.config_entry.data.get(CONFIG_UPDATE_INTERVAL),

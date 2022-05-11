@@ -55,7 +55,7 @@ class ExcavatorAPI:
             return True
         return False
 
-    async def get_rig_info(self) -> RigInfo | None:
+    async def get_rig_info(self) -> RigInfo:
         """Get Rig Information"""
         query = '{"id":1,"method":"info","params":[]}'
         response = await self.request(query)
@@ -63,7 +63,7 @@ class ExcavatorAPI:
             return RigInfo(response)
         return RigInfo()
 
-    async def get_devices(self) -> dict[int, GraphicsCard] | None:
+    async def get_devices(self) -> dict[int, GraphicsCard]:
         """Get the devices"""
         query = '{"id":1,"method":"devices.get","params":[]}'
         response = await self.request(query)
@@ -73,8 +73,9 @@ class ExcavatorAPI:
                 card = GraphicsCard(device_data)
                 devices[card.id] = card
             return devices
+        return {}
 
-    async def get_algorithms(self) -> dict[int, Algorithm] | None:
+    async def get_algorithms(self) -> dict[int, Algorithm]:
         """Get the Algorithms"""
         query = '{"id":1,"method":"algorithm.list","params":[]}'
         response = await self.request(query)
@@ -84,9 +85,9 @@ class ExcavatorAPI:
                 algorithm = Algorithm(algorithm_data)
                 algorithms[algorithm.id] = algorithm
             return algorithms
-        return None
+        return {}
 
-    async def get_workers(self) -> dict[int, Worker] | None:
+    async def get_workers(self) -> dict[int, Worker]:
         """Get the workers"""
         query = '{"id":1,"method":"worker.list","params":[]}'
         response = await self.request(query)
@@ -96,7 +97,7 @@ class ExcavatorAPI:
                 worker = Worker(worker_data)
                 workers[worker.id] = worker
             return workers
-        return None
+        return {}
 
     @staticmethod
     def format_host_address(host_address: str) -> str:

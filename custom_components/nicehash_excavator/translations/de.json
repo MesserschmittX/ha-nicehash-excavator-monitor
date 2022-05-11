@@ -24,11 +24,17 @@
     },
     "options": {
         "error": {
-            "invalid_update_interval": "Ungültige Aktualisierungsrate: bereich 1 bis 600"
+            "cannot_connect": "Verbindung fehlgeschlagen",
+            "no_response" : "Keine Antwort bekommen",
+            "invalid_port": "Ungültiger Port: bereich 1 bis 65535",
+            "invalid_update_interval": "Ungültige Aktualisierungsrate: bereich 1 bis 600",
+            "unknown": "Unbekanter Fehler"
         },
         "step": {
             "init": {
                 "data": {
+                    "host_address": "Host Addresse",
+                    "host_port": "Excavator Port",
                     "update_interval": "Aktualisierungsrate in Sekunden",
                     "update_interval_fast": "Schnelle Aktualisierungsrate in Sekunden"
                 }

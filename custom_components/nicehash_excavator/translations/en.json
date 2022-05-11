@@ -24,11 +24,17 @@
     },
     "options": {
         "error": {
-            "invalid_update_interval": "Invalid update interval: range 1 to 3600"
+            "cannot_connect": "Connection failed",
+            "no_response" : "No response received",
+            "invalid_port": "Invalid port: range 1 to 65535",
+            "invalid_update_interval": "Invalid update interval: range 1 to 3600",
+            "unknown": "Unknown error occurred"
         },
         "step": {
             "init": {
                 "data": {
+                    "host_address": "Host address",
+                    "host_port": "Excavator port",
                     "update_interval": "Update interval in seconds",
                     "update_interval_fast": "Fast update interval in seconds"
                 }

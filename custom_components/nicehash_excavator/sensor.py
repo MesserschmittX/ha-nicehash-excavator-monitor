@@ -97,7 +97,10 @@ class RigSensor(SensorBase):
             info[
                 "sw_version"
             ] = f"{self._mining_rig.info.version}, Build: {self._mining_rig.info.build_number}"
-            info["uptime"] = f"{self._mining_rig.info.uptime / 60 / 60}h"
+            if isinstance(self._mining_rig.info.uptime, int):
+                info["uptime"] = f"{self._mining_rig.info.uptime / 60 / 60}h"
+            else:
+                info["uptime"] = self._mining_rig.info.uptime
 
         gpu_models: dict[str, int]
         gpu_models = {}
@@ -351,12 +354,13 @@ class WorkerAlgorithmHashrateSensor(DeviceSensorBase):
     @property
     def state(self) -> float:
         worker = self._mining_rig.get_worker(self._worker_id)
-        if worker and worker.algorithms[self._algorithm_id]:
+        algorithm = None
+        if worker:
+            algorithm = worker.algorithms[self._algorithm_id]
+
+        if algorithm and isinstance(algorithm.speed, float):
             return round(
-                self._mining_rig.get_worker(self._worker_id)
-                .algorithms[self._algorithm_id]
-                .speed
-                / 1000000,
+                algorithm.speed / 1000000,
                 2,
             )
         return "unavailable"
@@ -384,9 +388,11 @@ class AlgorithmHashrateSensor(RigSensor):
 
     @property
     def state(self) -> float:
-        if self._mining_rig.get_algorithm(self._algorithm_id):
+        algorithm = self._mining_rig.get_algorithm(self._algorithm_id)
+        if algorithm and isinstance(algorithm.speed, float):
             return round(
-                self._mining_rig.get_algorithm(self._algorithm_id).speed / 1000000, 2
+                algorithm.speed / 1000000,
+                2,
             )
         return "unavailable"
 
@@ -488,7 +494,7 @@ class CPUSensor(RigSensor):
 
     @property
     def state(self) -> float:
-        if self._mining_rig.info:
+        if self._mining_rig.info and isinstance(self._mining_rig.info.cpu_load, float):
             return round(self._mining_rig.info.cpu_load, 2)
         return "unavailable"
 
@@ -508,6 +514,6 @@ class RAMSensor(RigSensor):
 
     @property
     def state(self) -> float:
-        if self._mining_rig.info:
+        if self._mining_rig.info and isinstance(self._mining_rig.info.ram_load, float):
             return round(self._mining_rig.info.ram_load)
         return "unavailable"

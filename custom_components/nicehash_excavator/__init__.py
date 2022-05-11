@@ -17,7 +17,7 @@ PLATFORMS = [Platform.SENSOR, Platform.SWITCH]
 
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
-    """Set up from a config entry."""
+    """Set up a config entry."""
 
     mining_rig = MiningRig(hass, config_entry)
     await mining_rig.update()
