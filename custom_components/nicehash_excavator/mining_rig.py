@@ -8,6 +8,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Callable, HomeAssistant
 
 from .const import (
+    CONFIG_ENABLE_DEBUG_LOGGING,
     CONFIG_HOST_ADDRESS,
     CONFIG_HOST_PORT,
     CONFIG_NAME,
@@ -25,8 +26,14 @@ class MiningRig:
         self._hass = hass
         self._name = config_entry.data[CONFIG_NAME]
         self._id = config_entry.data[CONFIG_NAME].lower()
+        try:
+            self._enable_debug_logging = config_entry.data[CONFIG_ENABLE_DEBUG_LOGGING]
+        except KeyError:
+            self._enable_debug_logging = False
         self._api = ExcavatorAPI(
-            config_entry.data[CONFIG_HOST_ADDRESS], config_entry.data[CONFIG_HOST_PORT]
+            config_entry.data[CONFIG_HOST_ADDRESS],
+            config_entry.data[CONFIG_HOST_PORT],
+            self._enable_debug_logging,
         )
         self.algorithms = {}
         self.devices = {}

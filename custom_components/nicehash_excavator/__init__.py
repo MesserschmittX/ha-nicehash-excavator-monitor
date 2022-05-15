@@ -7,7 +7,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .const import CONFIG_UPDATE_INTERVAL, DOMAIN
+from .const import CONFIG_ENABLE_DEBUG_LOGGING, CONFIG_UPDATE_INTERVAL, DOMAIN
 from .mining_rig import MiningRig
 
 _LOGGER = logging.getLogger(__name__)
@@ -49,6 +49,7 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry):
 
         new = {**config_entry.data}
         # TODO_: modify Config Entry data
+        new[CONFIG_ENABLE_DEBUG_LOGGING] = False
 
         config_entry.version = 2
         hass.config_entries.async_update_entry(config_entry, data=new)

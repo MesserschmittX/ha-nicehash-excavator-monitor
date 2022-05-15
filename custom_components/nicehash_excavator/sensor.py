@@ -1,12 +1,16 @@
 """Sensor integration."""
+import logging
+
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, POWER_WATT, TEMP_CELSIUS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 
-from .const import CONFIG_NAME, DOMAIN
+from .const import CONFIG_ENABLE_DEBUG_LOGGING, CONFIG_NAME, DOMAIN
 from .mining_rig import MiningRig
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -61,6 +65,10 @@ class SensorBase(Entity):
         """Initialize the sensor."""
         self._rig_name = config_entry.data.get(CONFIG_NAME)
         self._mining_rig = mining_rig
+        try:
+            self._enable_debug_logging = config_entry.data[CONFIG_ENABLE_DEBUG_LOGGING]
+        except KeyError:
+            self._enable_debug_logging = False
 
     @property
     def available(self) -> bool:
@@ -93,18 +101,15 @@ class RigSensor(SensorBase):
             "name": f"{self._rig_name}",
             "manufacturer": "NiceHash",
         }
-        if self._mining_rig.info:
+        try:
             info[
                 "sw_version"
             ] = f"{self._mining_rig.info.version}, Build: {self._mining_rig.info.build_number}"
-            if isinstance(self._mining_rig.info.uptime, int):
-                info["uptime"] = f"{self._mining_rig.info.uptime / 60 / 60}h"
-            else:
-                info["uptime"] = self._mining_rig.info.uptime
 
-        gpu_models: dict[str, int]
-        gpu_models = {}
-        if self._mining_rig.devices:
+            info["uptime"] = f"{self._mining_rig.info.uptime / 60 / 60}h"
+
+            gpu_models: dict[str, int]
+            gpu_models = {}
             for device_id in self._mining_rig.devices:
                 gpu_model = self._mining_rig.get_device(device_id).name
                 if gpu_model in gpu_models:
@@ -123,7 +128,11 @@ class RigSensor(SensorBase):
                     model_string = str(gpu_count) + "x " + gpu_model
 
             info["model"] = model_string
-
+        except (AttributeError, TypeError) as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            info["model"] = "No GPUs found"
+            info["uptime"] = "Not available"
         return info
 
 
@@ -145,22 +154,26 @@ class DeviceSensorBase(SensorBase):
     @property
     def device_info(self) -> any:
         """Information about this entity/device."""
-
-        return {
-            "identifiers": {
-                (
+        try:
+            return {
+                "identifiers": {
+                    (
+                        DOMAIN,
+                        self._device_uuid,
+                    )
+                },
+                "name": self._device_name,
+                "model": self._mining_rig.get_device(self._device_id).name,
+                "manufacturer": self._mining_rig.get_device(self._device_id).subvendor,
+                "via_device": (
                     DOMAIN,
-                    self._device_uuid,
-                )
-            },
-            "name": self._device_name,
-            "model": self._mining_rig.get_device(self._device_id).name,
-            "manufacturer": self._mining_rig.get_device(self._device_id).subvendor,
-            "via_device": (
-                DOMAIN,
-                f"{self._rig_name} Excavator",
-            ),
-        }
+                    f"{self._rig_name} Excavator",
+                ),
+            }
+        except AttributeError as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
 
 class GpuTempSensor(DeviceSensorBase):
@@ -179,9 +192,12 @@ class GpuTempSensor(DeviceSensorBase):
 
     @property
     def state(self) -> float:
-        if self._mining_rig.get_device(self._device_id):
+        try:
             return self._mining_rig.get_device(self._device_id).gpu_temp
-        return "unavailable"
+        except AttributeError as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
 
 class VRAMTempSensor(DeviceSensorBase):
@@ -200,9 +216,12 @@ class VRAMTempSensor(DeviceSensorBase):
 
     @property
     def state(self) -> float:
-        if self._mining_rig.get_device(self._device_id):
+        try:
             return self._mining_rig.get_device(self._device_id).vram_temp
-        return "unavailable"
+        except AttributeError as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
 
 class HotspotTempSensor(DeviceSensorBase):
@@ -221,9 +240,12 @@ class HotspotTempSensor(DeviceSensorBase):
 
     @property
     def state(self) -> float:
-        if self._mining_rig.get_device(self._device_id):
+        try:
             return self._mining_rig.get_device(self._device_id).hotspot_temp
-        return "unavailable"
+        except AttributeError as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
 
 class FanSensor(DeviceSensorBase):
@@ -241,9 +263,12 @@ class FanSensor(DeviceSensorBase):
 
     @property
     def state(self) -> float:
-        if self._mining_rig.get_device(self._device_id):
+        try:
             return self._mining_rig.get_device(self._device_id).gpu_fan_speed
-        return "unavailable"
+        except AttributeError as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
 
 class OvertempSensor(DeviceSensorBase):
@@ -259,9 +284,12 @@ class OvertempSensor(DeviceSensorBase):
 
     @property
     def state(self) -> bool:
-        if self._mining_rig.get_device(self._device_id):
+        try:
             return self._mining_rig.get_device(self._device_id).too_hot
-        return "unavailable"
+        except AttributeError as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
 
 class PowerSensor(DeviceSensorBase):
@@ -280,9 +308,12 @@ class PowerSensor(DeviceSensorBase):
 
     @property
     def state(self) -> float:
-        if self._mining_rig.get_device(self._device_id):
+        try:
             return self._mining_rig.get_device(self._device_id).gpu_power_usage
-        return "unavailable"
+        except AttributeError as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
 
 class ModelSensor(DeviceSensorBase):
@@ -298,9 +329,12 @@ class ModelSensor(DeviceSensorBase):
 
     @property
     def state(self) -> str:
-        if self._mining_rig.get_device(self._device_id):
+        try:
             return self._mining_rig.get_device(self._device_id).name
-        return "unavailable"
+        except AttributeError as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
 
 class VendorSensor(DeviceSensorBase):
@@ -316,9 +350,12 @@ class VendorSensor(DeviceSensorBase):
 
     @property
     def state(self) -> str:
-        if self._mining_rig.get_device(self._device_id):
+        try:
             return self._mining_rig.get_device(self._device_id).subvendor
-        return "unavailable"
+        except AttributeError as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
 
 class WorkerAlgorithmHashrateSensor(DeviceSensorBase):
@@ -345,25 +382,35 @@ class WorkerAlgorithmHashrateSensor(DeviceSensorBase):
 
     @property
     def name(self) -> str:
-        return f"{self._rig_name} {self._device_name} {self._mining_rig.get_worker(self._worker_id).algorithms[self._algorithm_id].name}"
+        try:
+            return f"{self._rig_name} {self._device_name} {self._mining_rig.get_worker(self._worker_id).algorithms[self._algorithm_id].name}"
+        except AttributeError as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
     @property
     def unique_id(self) -> str:
-        return f"{self._rig_name}_{self._device_uuid}_{self._mining_rig.get_worker(self._worker_id).algorithms[self._algorithm_id].name}"
+        try:
+            return f"{self._rig_name}_{self._device_uuid}_{self._mining_rig.get_worker(self._worker_id).algorithms[self._algorithm_id].name}"
+        except AttributeError as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
     @property
     def state(self) -> float:
-        worker = self._mining_rig.get_worker(self._worker_id)
-        algorithm = None
-        if worker:
+        try:
+            worker = self._mining_rig.get_worker(self._worker_id)
             algorithm = worker.algorithms[self._algorithm_id]
-
-        if algorithm and isinstance(algorithm.speed, float):
             return round(
                 algorithm.speed / 1000000,
                 2,
             )
-        return "unavailable"
+        except (AttributeError, TypeError) as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
 
 class AlgorithmHashrateSensor(RigSensor):
@@ -380,21 +427,34 @@ class AlgorithmHashrateSensor(RigSensor):
 
     @property
     def name(self) -> str:
-        return f"{self._rig_name} {self._mining_rig.get_algorithm(self._algorithm_id).name}"
+        try:
+            return f"{self._rig_name} {self._mining_rig.get_algorithm(self._algorithm_id).name}"
+        except AttributeError as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
     @property
     def unique_id(self) -> str:
-        return f"{self._rig_name}_{self._mining_rig.get_algorithm(self._algorithm_id).name}_hashrate"
+        try:
+            return f"{self._rig_name}_{self._mining_rig.get_algorithm(self._algorithm_id).name}_hashrate"
+        except AttributeError as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
     @property
     def state(self) -> float:
-        algorithm = self._mining_rig.get_algorithm(self._algorithm_id)
-        if algorithm and isinstance(algorithm.speed, float):
+        try:
+            algorithm = self._mining_rig.get_algorithm(self._algorithm_id)
             return round(
                 algorithm.speed / 1000000,
                 2,
             )
-        return "unavailable"
+        except (AttributeError, TypeError) as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
 
 class OnlineSensor(RigSensor):
@@ -426,15 +486,18 @@ class GpuModelsSensor(RigSensor):
 
     @property
     def state(self) -> str:
-        devices = ""
-        if self._mining_rig.devices:
+        try:
+            devices = ""
             for device_id in self._mining_rig.devices:
                 devices += (
                     self._mining_rig.get_device(device_id).name.replace("GeForce ", "")
                     + ", "
                 )
             return devices[:-2] if len(devices[:-2]) <= 255 else "value to long"
-        return "unavailable"
+        except AttributeError as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
 
 class GpuCountSensor(RigSensor):
@@ -450,9 +513,12 @@ class GpuCountSensor(RigSensor):
 
     @property
     def state(self) -> int:
-        if self._mining_rig.devices:
+        try:
             return len(self._mining_rig.devices)
-        return "unavailable"
+        except AttributeError as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
 
 class TotalPowerSensor(RigSensor):
@@ -471,12 +537,15 @@ class TotalPowerSensor(RigSensor):
 
     @property
     def state(self) -> float:
-        power = 0
-        if self._mining_rig.devices:
+        try:
+            power = 0
             for device_id in self._mining_rig.devices:
                 power += self._mining_rig.get_device(device_id).gpu_power_usage
             return power
-        return "unavailable"
+        except (AttributeError, TypeError) as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
 
 class CPUSensor(RigSensor):
@@ -494,9 +563,12 @@ class CPUSensor(RigSensor):
 
     @property
     def state(self) -> float:
-        if self._mining_rig.info and isinstance(self._mining_rig.info.cpu_load, float):
+        try:
             return round(self._mining_rig.info.cpu_load, 2)
-        return "unavailable"
+        except (AttributeError, TypeError) as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"
 
 
 class RAMSensor(RigSensor):
@@ -514,6 +586,9 @@ class RAMSensor(RigSensor):
 
     @property
     def state(self) -> float:
-        if self._mining_rig.info and isinstance(self._mining_rig.info.ram_load, float):
+        try:
             return round(self._mining_rig.info.ram_load)
-        return "unavailable"
+        except (AttributeError, TypeError) as error:
+            if self._enable_debug_logging:
+                _LOGGER.info(error)
+            return "unavailable"

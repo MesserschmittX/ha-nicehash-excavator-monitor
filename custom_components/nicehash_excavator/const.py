@@ -16,6 +16,8 @@ CONFIG_HOST_PORT = "host_port"
 CONFIG_UPDATE_INTERVAL = "update_interval"
 CONFIG_UPDATE_INTERVAL_FAST = "update_interval_fast"
 
+CONFIG_ENABLE_DEBUG_LOGGING = "enable_debug_logging"
+
 API = "api"
 MINING_RIG = "mining_rig"
 

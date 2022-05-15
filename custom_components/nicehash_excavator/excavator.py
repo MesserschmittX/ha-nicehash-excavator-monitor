@@ -14,11 +14,13 @@ _LOGGER = logging.getLogger(__name__)
 class ExcavatorAPI:
     """Excavator API Implementation."""
 
-    def __init__(self, host_address: str, host_port: int) -> None:
+    def __init__(
+        self, host_address: str, host_port: int, enable_debug_logging: bool = False
+    ) -> None:
         """Init ExcavatorAPI."""
         self.host_address = self.format_host_address(host_address)
         self._host_port = host_port
-        self._enable_debug_logging = False
+        self._enable_debug_logging = enable_debug_logging
 
     async def request(self, query: str) -> ClientResponse | None:
         """Excavator API Request"""
@@ -61,7 +63,7 @@ class ExcavatorAPI:
         response = await self.request(query)
         if response is not None:
             return RigInfo(response)
-        return RigInfo()
+        return None
 
     async def get_devices(self) -> dict[int, GraphicsCard]:
         """Get the devices"""
@@ -107,7 +109,3 @@ class ExcavatorAPI:
         ):
             host_address = "http://" + host_address
         return host_address
-
-    def set_logging(self, enable: bool) -> None:
-        """Enable or disable logging of the made requests"""
-        self._enable_debug_logging = enable

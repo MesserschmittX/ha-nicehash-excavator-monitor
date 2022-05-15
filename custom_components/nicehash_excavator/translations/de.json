@@ -36,7 +36,8 @@
                     "host_address": "Host Addresse",
                     "host_port": "Excavator Port",
                     "update_interval": "Aktualisierungsrate in Sekunden",
-                    "update_interval_fast": "Schnelle Aktualisierungsrate in Sekunden"
+                    "update_interval_fast": "Schnelle Aktualisierungsrate in Sekunden",
+                    "enable_debug_logging": "Debug Logs aktivieren"
                 }
             }
         }

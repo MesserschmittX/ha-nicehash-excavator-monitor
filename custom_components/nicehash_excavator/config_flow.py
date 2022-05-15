@@ -16,6 +16,7 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
+    CONFIG_ENABLE_DEBUG_LOGGING,
     CONFIG_HOST_ADDRESS,
     CONFIG_HOST_PORT,
     CONFIG_NAME,
@@ -102,6 +103,8 @@ class MainConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             errors = await get_errors(user_input)
             if not errors:
+                # Set debug logging false on setup, can be changed in device config
+                # user_input[CONFIG_ENABLE_DEBUG_LOGGING] = False
                 return self.async_create_entry(
                     title=user_input[CONFIG_NAME], data=user_input
                 )
@@ -136,6 +139,9 @@ class OptionsFlowHandler(OptionsFlow):
                 new[CONFIG_UPDATE_INTERVAL_FAST] = user_input[
                     CONFIG_UPDATE_INTERVAL_FAST
                 ]
+                # new[CONFIG_ENABLE_DEBUG_LOGGING] = user_input[
+                #    CONFIG_ENABLE_DEBUG_LOGGING
+                # ]
                 self.hass.config_entries.async_update_entry(self.config_entry, data=new)
                 return self.async_create_entry(title="", data=user_input)
 
@@ -159,6 +165,10 @@ class OptionsFlowHandler(OptionsFlow):
                         CONFIG_UPDATE_INTERVAL_FAST,
                         default=self.config_entry.data.get(CONFIG_UPDATE_INTERVAL_FAST),
                     ): int,
+                    # vol.Optional(
+                    #    CONFIG_ENABLE_DEBUG_LOGGING,
+                    #    default=self.config_entry.data.get(CONFIG_ENABLE_DEBUG_LOGGING),
+                    # ): bool,
                 }
             ),
             errors=errors,
